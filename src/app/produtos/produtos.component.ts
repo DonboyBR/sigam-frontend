@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common'; // Para *ngFor, *ngIf
+import { FormsModule } from '@angular/forms'; // Para [(ngModel)]
+import { HttpClient } from '@angular/common/http'; // Para fazer requisições HTTP
+import { Router } from '@angular/router'; // Para navegação
 
 // Interface para representar a estrutura de um Produto
 interface Produto {
-  id?: number;
+  id?: number; // Opcional, pois não existe ao criar um novo produto
   nome: string;
   descricao?: string;
   precoVenda: number;
@@ -20,27 +20,27 @@ interface Produto {
 
 @Component({
   selector: 'app-produtos',
-  templateUrl: './produtos.component.html', // Caminho relativo ao produtos.component.ts
-  styleUrls: ['./produtos.component.css'], // Caminho relativo ao produtos.component.ts
+  templateUrl: './produtos.component.html',
+  styleUrls: ['./produtos.component.css'], // ATENÇÃO AQUI: Mudou para .css
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule] // Importa módulos necessários
 })
 export class ProdutosComponent implements OnInit {
-  produtos: Produto[] = [];
-  produto: Produto = {
+  produtos: Produto[] = []; // Lista de produtos para exibir
+  produto: Produto = { // Objeto para o formulário de cadastro/edição
     nome: '',
     precoVenda: 0,
     estoqueAtual: 0,
     ativo: true
   };
-  editMode = false;
+  editMode = false; // Indica se estamos editando um produto existente
 
-  private apiUrl = 'http://localhost:8080/api/produtos';
+  private apiUrl = 'http://localhost:8080/api/produtos'; // URL da sua API de produtos
 
-  constructor(private http: HttpClient, private router: Router) { }
+  constructor(private http: HttpClient, private router: Router) { } // Injeta HttpClient e Router
 
   ngOnInit(): void {
-    this.carregarProdutos();
+    this.carregarProdutos(); // Carrega os produtos ao iniciar o componente
   }
 
   carregarProdutos(): void {
@@ -50,28 +50,31 @@ export class ProdutosComponent implements OnInit {
       },
       error => {
         console.error('Erro ao carregar produtos:', error);
+        // Em uma aplicação real, você mostraria uma mensagem de erro para o usuário
       }
     );
   }
 
   salvarProduto(): void {
     if (this.editMode) {
+      // Atualizar produto existente
       this.http.put<Produto>(`${this.apiUrl}/${this.produto.id}`, this.produto).subscribe(
         data => {
           console.log('Produto atualizado:', data);
           this.resetForm();
-          this.carregarProdutos();
+          this.carregarProdutos(); // Recarrega a lista
         },
         error => {
           console.error('Erro ao atualizar produto:', error);
         }
       );
     } else {
+      // Criar novo produto
       this.http.post<Produto>(this.apiUrl, this.produto).subscribe(
         data => {
           console.log('Produto criado:', data);
           this.resetForm();
-          this.carregarProdutos();
+          this.carregarProdutos(); // Recarrega a lista
         },
         error => {
           console.error('Erro ao criar produto:', error);
@@ -81,7 +84,7 @@ export class ProdutosComponent implements OnInit {
   }
 
   editarProduto(prod: Produto): void {
-    this.produto = { ...prod };
+    this.produto = { ...prod }; // Copia o produto para o formulário (evita modificar o original diretamente)
     this.editMode = true;
   }
 
@@ -90,11 +93,11 @@ export class ProdutosComponent implements OnInit {
       console.error('ID do produto não pode ser indefinido para exclusão.');
       return;
     }
-    if (confirm('Tem certeza que deseja excluir este produto?')) {
+    if (confirm('Tem certeza que deseja excluir este produto?')) { // Use um modal personalizado em produção
       this.http.delete(`${this.apiUrl}/${id}`).subscribe(
         () => {
           console.log('Produto excluído com sucesso!');
-          this.carregarProdutos();
+          this.carregarProdutos(); // Recarrega a lista
         },
         error => {
           console.error('Erro ao excluir produto:', error);
