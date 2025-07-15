@@ -1,0 +1,109 @@
+<!-- src/app/vendas/vendas.component.html -->
+<div class="min-h-screen bg-gray-100 p-4">
+  <div class="bg-white p-6 rounded-lg shadow-lg">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Registro de Vendas</h2>
+
+    <!-- Seção de Busca e Adição de Produtos -->
+    <div class="mb-6 border-b pb-4">
+      <h3 class="text-xl font-semibold text-gray-700 mb-4">Adicionar Produtos</h3>
+      <div class="flex items-center space-x-4 mb-4">
+        <input type="text" [(ngModel)]="buscaProduto" (keyup.enter)="buscarProdutoPorNome()"
+               class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+               placeholder="Buscar produto por nome ou código de barras">
+        <button (click)="buscarProdutoPorNome()"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline">
+          Buscar
+        </button>
+      </div>
+
+      <div *ngIf="produtoEncontrado" class="p-4 bg-blue-50 rounded-lg border border-blue-200 flex items-center justify-between">
+        <div>
+          <p class="font-semibold text-blue-800">{{ produtoEncontrado.nome }} - R$ {{ produtoEncontrado.precoVenda | number:'1.2-2' }}</p>
+          <p class="text-sm text-blue-700">Estoque: {{ produtoEncontrado.estoqueAtual }}</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <input type="number" [(ngModel)]="quantidadeAdicionar" min="1" [max]="produtoEncontrado.estoqueAtual"
+                 class="w-20 py-1 px-2 border rounded-lg text-center" value="1">
+          <button (click)="adicionarAoCarrinho()"
+                  class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded-lg focus:outline-none focus:shadow-outline">
+            Adicionar
+          </button>
+        </div>
+      </div>
+      <div *ngIf="!produtoEncontrado && buscaProduto && buscaRealizada" class="p-4 bg-red-50 rounded-lg border border-red-200 text-red-700">
+        Produto não encontrado.
+      </div>
+    </div>
+
+    <!-- Seção do Carrinho de Vendas -->
+    <h3 class="text-xl font-semibold text-gray-700 mb-4">Itens no Carrinho</h3>
+    <div class="overflow-x-auto mb-6">
+      <table class="min-w-full bg-white rounded-lg shadow overflow-hidden">
+        <thead class="bg-gray-200 text-gray-700">
+        <tr>
+          <th class="py-3 px-4 text-left">Produto</th>
+          <th class="py-3 px-4 text-left">Preço Unit.</th>
+          <th class="py-3 px-4 text-left">Quantidade</th>
+          <th class="py-3 px-4 text-left">Subtotal</th>
+          <th class="py-3 px-4 text-left">Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let item of carrinho.itens" class="border-b border-gray-200 hover:bg-gray-50">
+          <td class="py-3 px-4">{{ item.produto.nome }}</td>
+          <td class="py-3 px-4">R$ {{ item.precoUnitarioVenda | number:'1.2-2' }}</td>
+          <td class="py-3 px-4">{{ item.quantidade }}</td>
+          <td class="py-3 px-4">R$ {{ item.subtotal | number:'1.2-2' }}</td>
+          <td class="py-3 px-4">
+            <button (click)="removerDoCarrinho(item.produto.id)" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded-lg text-sm">Remover</button>
+          </td>
+        </tr>
+        <tr *ngIf="carrinho.itens.length === 0">
+          <td colspan="5" class="py-4 px-4 text-center text-gray-500">Nenhum item no carrinho.</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="text-right text-2xl font-bold text-gray-800 mb-6">
+      Total da Venda: R$ {{ carrinho.valorTotal | number:'1.2-2' }}
+    </div>
+
+    <!-- Seção de Pagamento -->
+    <h3 class="text-xl font-semibold text-gray-700 mb-4">Informações de Pagamento</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div>
+        <label for="metodoPagamento" class="block text-gray-700 text-sm font-bold mb-2">Método de Pagamento:</label>
+        <select id="metodoPagamento" name="metodoPagamento" [(ngModel)]="carrinho.metodoPagamento"
+                class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required>
+          <option value="">Selecione</option>
+          <option value="DINHEIRO">Dinheiro</option>
+          <option value="CREDITO">Crédito</option>
+          <option value="DEBITO">Débito</option>
+          <option value="PIX">PIX</option>
+          <option value="ONLINE">Online</option>
+        </select>
+      </div>
+      <div *ngIf="carrinho.metodoPagamento === 'CREDITO' || carrinho.metodoPagamento === 'DEBITO'">
+        <label for="bandeiraCartao" class="block text-gray-700 text-sm font-bold mb-2">Bandeira do Cartão:</label>
+        <input type="text" id="bandeiraCartao" name="bandeiraCartao" [(ngModel)]="carrinho.bandeiraCartao"
+               class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+               placeholder="Ex: VISA, MASTERCARD">
+      </div>
+      <div *ngIf="carrinho.metodoPagamento === 'PIX' || carrinho.metodoPagamento === 'CREDITO' || carrinho.metodoPagamento === 'DEBITO'">
+        <label for="referenciaPagamento" class="block text-gray-700 text-sm font-bold mb-2">Ref. Pagamento (NSU/Cód. Autorização):</label>
+        <input type="text" id="referenciaPagamento" name="referenciaPagamento" [(ngModel)]="carrinho.referenciaPagamento"
+               class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+               placeholder="Número do comprovante da maquininha">
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end">
+      <button (click)="finalizarVenda()"
+              class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline text-lg">
+        Finalizar Venda
+      </button>
+    </div>
+  </div>
+</div>
