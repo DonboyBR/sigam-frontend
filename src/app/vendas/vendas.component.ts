@@ -1,15 +1,21 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common'; // Para *ngFor, *ngIf, pipes
-import { FormsModule } from '@angular/forms'; // Para [(ngModel)]
-import { HttpClient } from '@angular/common/http'; // Para fazer requisições HTTP
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 
-// Interfaces para representar a estrutura dos dados
+// Interface para representar a estrutura de um Produto
 interface Produto {
   id: number;
   nome: string;
+  descricao?: string; // Adicionado para consistência com o backend
   precoVenda: number;
+  precoCusto?: number; // Adicionado para consistência com o backend
   estoqueAtual: number;
-  // Outros campos do produto que você possa precisar
+  estoqueMinimo?: number; // Adicionado para consistência com o backend
+  categoria?: string;
+  codigoBarras?: string; // 👈 ATENÇÃO AQUI! Adicionado o campo codigoBarras como opcional
+  ativo: boolean; // Adicionado para consistência com o backend
 }
 
 interface ItemVenda {
@@ -21,7 +27,7 @@ interface ItemVenda {
 
 interface Venda {
   id?: number;
-  dataHoraVenda?: string; // Usar string para data/hora do backend
+  dataHoraVenda?: string;
   valorTotal: number;
   metodoPagamento: string;
   bandeiraCartao?: string;
@@ -33,8 +39,8 @@ interface Venda {
 
 @Component({
   selector: 'app-vendas',
-  templateUrl: './vendas.component.html',
-  styleUrls: ['./vendas.component.css'],
+  templateUrl: './vendas.component.html', // Caminho corrigido
+  styleUrls: ['./vendas.component.css'], // Caminho corrigido
   standalone: true,
   imports: [CommonModule, FormsModule]
 })
@@ -67,17 +73,14 @@ export class VendasComponent implements OnInit {
       return;
     }
 
-    // Em um cenário real, você faria uma busca mais sofisticada na API,
-    // talvez com um endpoint específico para buscar por nome/codigoBarras.
-    // Por enquanto, vamos buscar todos e filtrar no frontend (não ideal para muitos produtos).
     this.http.get<Produto[]>(this.produtoApiUrl).subscribe(
       data => {
         this.produtoEncontrado = data.find(p =>
           p.nome.toLowerCase().includes(this.buscaProduto.toLowerCase()) ||
-          (p.codigoBarras && p.codigoBarras.includes(this.buscaProduto))
+          (p.codigoBarras && p.codigoBarras.includes(this.buscaProduto)) // Agora codigoBarras existe na interface
         ) || null;
         this.buscaRealizada = true;
-        this.quantidadeAdicionar = 1; // Reseta a quantidade
+        this.quantidadeAdicionar = 1;
       },
       error => {
         console.error('Erro ao buscar produto:', error);
@@ -93,11 +96,9 @@ export class VendasComponent implements OnInit {
       const itemExistente = this.carrinho.itens.find(item => item.produto.id === this.produtoEncontrado?.id);
 
       if (itemExistente) {
-        // Se o item já existe, atualiza a quantidade
         itemExistente.quantidade += this.quantidadeAdicionar;
         itemExistente.subtotal = itemExistente.precoUnitarioVenda * itemExistente.quantidade;
       } else {
-        // Adiciona novo item
         const novoItem: ItemVenda = {
           produto: this.produtoEncontrado,
           quantidade: this.quantidadeAdicionar,
@@ -108,8 +109,8 @@ export class VendasComponent implements OnInit {
       }
 
       this.atualizarTotalCarrinho();
-      this.buscaProduto = ''; // Limpa a busca
-      this.produtoEncontrado = null; // Limpa o produto encontrado
+      this.buscaProduto = '';
+      this.produtoEncontrado = null;
       this.buscaRealizada = false;
     } else if (this.quantidadeAdicionar <= 0) {
       alert('A quantidade deve ser maior que zero.');
@@ -141,15 +142,14 @@ export class VendasComponent implements OnInit {
       return;
     }
 
-    // Prepara o objeto Venda para enviar ao backend
     const vendaParaEnviar: Venda = {
       valorTotal: this.carrinho.valorTotal,
       metodoPagamento: this.carrinho.metodoPagamento,
       bandeiraCartao: this.carrinho.bandeiraCartao,
       referenciaPagamento: this.carrinho.referenciaPagamento,
-      atendenteResponsavel: 'Recepcionista Demo', // Pode ser dinâmico no futuro
+      atendenteResponsavel: 'Recepcionista Demo',
       itens: this.carrinho.itens.map(item => ({
-        produto: { id: item.produto.id } as Produto, // Envia apenas o ID do produto
+        produto: { id: item.produto.id } as Produto,
         quantidade: item.quantidade,
         precoUnitarioVenda: item.precoUnitarioVenda,
         subtotal: item.subtotal
@@ -159,7 +159,7 @@ export class VendasComponent implements OnInit {
     this.http.post<Venda>(this.vendaApiUrl, vendaParaEnviar).subscribe(
       response => {
         alert('Venda finalizada com sucesso! ID: ' + response.id);
-        this.resetCarrinho(); // Limpa o carrinho após a venda
+        this.resetCarrinho();
       },
       error => {
         console.error('Erro ao finalizar venda:', error);
